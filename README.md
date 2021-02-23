@@ -102,3 +102,10 @@ from EMPLOYEES e, dept_count dc
 where e.department_id = dc.department_id;
 ```
 
+# EA3
+## B fa
+> https://regi.tankonyvtar.hu/hu/tartalom/tamop425/0046_algoritmusok/ch06s07.html
+> 
+> ![B-fák](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3MIgYySEs1tCl9Uq1rU4qXZG0h5q1SSELwg&usqp=CAU)
+> 
+> ![indexelt b-fa](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYuSvHqM-y83JM2D2UcLmHwVgZYzN500WHYA&usqp=CAU)
