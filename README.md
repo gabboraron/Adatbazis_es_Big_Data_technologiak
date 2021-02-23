@@ -103,9 +103,30 @@ where e.department_id = dc.department_id;
 ```
 
 # EA3
-## B fa
+> **B fa**
+> 
 > https://regi.tankonyvtar.hu/hu/tartalom/tamop425/0046_algoritmusok/ch06s07.html
 > 
 > ![B-fák](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3MIgYySEs1tCl9Uq1rU4qXZG0h5q1SSELwg&usqp=CAU)
 > 
 > ![indexelt b-fa](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYuSvHqM-y83JM2D2UcLmHwVgZYzN500WHYA&usqp=CAU)
+> 
+> ![sql processing](https://docs.oracle.com/database/121/TGSQL/img/GUID-476CEA3E-17B5-454F-AD82-CF3FC19D81B1-default.gif)
+> 
+> ![cost based optimization](https://docs.oracle.com/database/121/TGSQL/img/GUID-D0B38295-1289-42A5-94CC-4F1857D00835-default.png)
+> 
+> **syntax check**: typo error
+> **semantic check**: wheter the meaning is bad, when a column not eexist or something same
+> **shared pool check**: determine if it can skip resource-intensive part
+> 
+> ![sql parsing sharerd pool check  - cont](https://docs.oracle.com/database/121/TGSQL/img/GUID-B288E97D-C133-479F-B3DE-97576412FCFB-default.gif)
+> 
+> **execution plan**
+> - each step returns row set
+> -
+>  
+> ![row source tree](https://docs.oracle.com/database/121/TGSQL/img/GUID-CFA4215E-0CDC-4355-9722-FCF16C6CEAB7-default.gif)
+
+
+
+
