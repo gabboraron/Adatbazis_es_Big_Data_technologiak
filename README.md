@@ -127,6 +127,31 @@ where e.department_id = dc.department_id;
 >  
 > ![row source tree](https://docs.oracle.com/database/121/TGSQL/img/GUID-CFA4215E-0CDC-4355-9722-FCF16C6CEAB7-default.gif)
 
+```SQL
+explain plan for 
+select last_name, salary from employees where salay > 4000;
+
+select * from table(dbms_xplan.display);
+```
+
+> sor kiejölése után `F10`-el futtatjuk a `explain plan`-t
+```SQL
+explain plan for 
+select last_name, salary from employees where employee_id > 190;
+
+select * from table(dbms_xplan.display);
+```
+
+```SQL
+explain plan for 
+select * from employees where employee_id > 190;
+
+select * from table(dbms_xplan.display);
+```
+
+> number of rows:
+```SQL
+select count (*)
 
 
-
+```
