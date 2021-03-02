@@ -182,5 +182,22 @@ cost = building hash table + reading hash table
 - in contrast to sort merges, hash joins require an equality condition
 - because of sorts reqquired by other operations, the optimizer finds it cheeper to use a sort merge
 
-### cartesian join
+
+## 
+````SQL
+
+select * from employees;
+select * from table(dbms_xplan,display);
+explain plan for
+select first_name, last_name, job_id
+from EMPLOYEES where JOB_ID='AD_VP';
+
+select column_name, histogram
+from user_tab_col_statistics
+where table_name='EMPLOYEES'
+
+select endpoint_number, endpoint_valuse
+from user_
+````
+
 
