@@ -152,6 +152,35 @@ select * from table(dbms_xplan.display);
 > number of rows:
 ```SQL
 select count (*)
-
-
 ```
+
+# EA 4
+execution plan:
+- operation
+- object name/name
+- cardinality/rows
+- cost
+- reading out the ordering  of the operations from the plan: we have to start in the root, which is the `SELECT` operation, then we go from the inside out from right to left 
+
+## `JOIN`
+combines output from exactly two row sources, such as tables or views
+### nested loop
+> two nested `for` loops
+> 
+> - the database joins small subset of data, or the database joins large sets of data with optimizer mode set to `first_rows`
+
+### hash join
+- relativeli large amount of data is joined
+- the join is an equi join
+
+![hash join](https://courses.cs.washington.edu/courses/csep544/14wi/video/archive/html5/csep544_14wi_5/slide47.jpg)
+
+cost = building hash table + reading hash table
+
+### sort/merge join
+- the join condition between two tables is not an equijoin, that is uses an inequality condition such as < = > or >=
+- in contrast to sort merges, hash joins require an equality condition
+- because of sorts reqquired by other operations, the optimizer finds it cheeper to use a sort merge
+
+### cartesian join
+
