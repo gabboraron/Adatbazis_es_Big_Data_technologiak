@@ -171,7 +171,7 @@ combines output from exactly two row sources, such as tables or views
 
 ### hash join
 - relativeli large amount of data is joined
-- the join is an equi join
+- the join is an [equi join](https://www.w3resource.com/sql/joins/perform-an-equi-join.php)
 
 ![hash join](https://courses.cs.washington.edu/courses/csep544/14wi/video/archive/html5/csep544_14wi_5/slide47.jpg)
 
