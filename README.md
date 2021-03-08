@@ -24,6 +24,131 @@
 # EA1
 Schema: hr/hr
 
+`Entity`
+> unique real world thing
+> - Logical
+> - Objects
+> - `Entity instance`: one specific member of an entity type
+
+`Data Model Elements`
+> `Attribute`
+> - piece of information that describes an Entity
+> - multiple atributes: `Product{Name,price,instock}`
+> 
+> `Relationship`: how entities depend on or connect to each other
+> 
+> `Entity key`: 
+> - A property or a set of properties of an entity that are used to determine identity
+> - The properties that make up an entity key are chosen at design time.
+> - The values of entity key properties must uniquely identify an entity instance
+> - The key value should not be modified
+
+![ER diagram](https://beginnersbook.com/wp-content/uploads/2015/04/E-R-Diagram.png) ![relationship types](https://www.calebcurry.com/wp-content/uploads/2018/08/options2.png)
+
+## Conceptual data model
+- Identifies entities and the highest level relation between entities
+- No attributes specified
+
+## Logical data model
+- Describes HOW the system will be implemented, regardless of the DBMS
+- Includes all entities and relationships among them.
+- All attributes for each entity are specified.
+- The primary key for each entity is specified.
+- Foreign keys (keys identifying the relationship between different entities) are specified.
+- Normalization occurs at this level.
+
+## Physical data model
+- Describes HOW the system will be implemented using a specific DBMS
+- Specifies the tables and the columns.
+- Foreign keys are used to identify relationships between tables.
+- Denormalization may occur based on user requirements.
+- Physical considerations may cause the physical data model to be quite different from the logical data model.
+
+## Transforming ER model into relational model 
+- In relational database design, a many-to-many relationship is not allowed. 
+- Need to break apart the many-to-many relationship into two one-to-many relationships.
+- Using a third table, commonly called a “join table
+- Each record in the “join table” would have the foreign key fields of the two tables it is joining together. 
+- Join table has at least two columns, holding Primary keys from the tables it joins.
+- Can have additional columns, holding properties of the relationship
+
+## Database normalization
+> - Normalization the process of organizing data in a database that includes creating tables and establishing relationships between the tables 
+> - Process is used to help eliminate redundant data
+- Normalization forms:
+  - 1NF		Eliminate Repeating Groups
+  - 2NF		Eliminate Redundant Data
+  - 3NF		Eliminate Columns Not Dependent on Key
+  - BCNF		Only key dependency exists
+
+### First Normal Form  (1NF) 
+http://www.gitta.info/LogicModelin/en/html/DataConsiten_Norm1NF.html
+> This rule defines that all the attributes in a relation must have atomic domains. The values in an atomic domain are indivisible units:
+> - Eliminate repeating groups in individual tables
+> - Create separate table for each set of related data
+> - Identify each set of related data with primary key
+>
+> Do not use multiple fields in a single table to store similar data
+> 
+> **Primary key**
+> 
+> A primary key is a candidate key that is most appropriate to be the main reference key for the table. 
+> - It is used to help establish relationships with other tables.
+> - Always choose a single simple key over a composite key if possible
+
+![1st normal form](http://www.gitta.info/LogicModelin/en/image/1NF.gif)
+
+### Second Normal Form  (2NF) 
+http://www.gitta.info/LogicModelin/en/html/DataConsiten_Norm2NF.html
+> For a table to be in 2NF, there are two requirements:
+> - The database is in first normal form 
+> - All nonkey attributes in the table must be functionally dependent on the entire primary key
+> 
+> *Note: Remember that we are dealing with non-key attributes*
+
+![2nd nf](http://www.gitta.info/LogicModelin/en/image/2NF.gif)
+
+#### 2NF - Decomposition
+https://www.slideshare.net/raiuniversity/bsc-cs-iidbmsuivnormalization
+> 1. If a data item is fully functionally dependent on only a part of the primary key, move that data item and that part of the primary key to a new table.
+> 2. If other data items are functionally dependent on the same part of the key, place them in the new table also
+> 3. Make the partial primary key copied from the original table the primary key for the new table. Place all items that appear in the repeating group in a new table
+
+If there is a table with columns `A,B,C,D ` with `Primary Key (A,B)` & `D` is dependant on `A` (alone) then to be `2NF`, you should reduce (split) tables as:
+- Table with columns `A,D` with  `Primary Key (A)`
+- Table with columns `A,B,C` with  `Primary Key (A,B)`
+
+![2nf decomp](https://image.slidesharecdn.com/bsccs-ii-dbms-u-iv-normalization-150317025645-conversion-gate01/95/bsc-cs-iidbmsuivnormalization-15-638.jpg?cb=1426561931)
+
+### Third normal form (3NF)
+http://www.gitta.info/LogicModelin/en/html/DataConsiten_Norm3NF.html
+> For a table to be in 3NF, there are two requirements
+> - The table should be in 2NF
+> - There can be no interdependencies among non-key attributes
+> 
+> In the Book Schema Third Normal Form is violated since a non-key field is dependent on another non-key field and is transitively dependent on the primary key. 
+
+![3nf](http://www.gitta.info/LogicModelin/en/image/3NF.gif)
+
+#### 3NF - Decomposition
+> 1. Move all interdependent non-key items to a new entity.
+> 2. Identify a primary key for the new entity.
+> 3. Place the primary key for the new entity as a foreign key on the original entity. 
+
+If there is a table with columns `A,B,C` with `Primary Key (A)` and `C` is dependant on `B (B -> C)` then to be 3NF, the tables become:
+- Table with columns `B,C` with `Primary Key (B)`
+- Table with fields `A,B` with `Primary Key (A)`, and `Foreign Key (B)` 
+
+![3nf decomp](https://image.slidesharecdn.com/bsccs-ii-dbms-u-iv-normalization-150317025645-conversion-gate01/95/bsc-cs-iidbmsuivnormalization-18-638.jpg?cb=1426561931)
+
+
+
+
+
+
+
+
+
 # EA2
 **alap SQL parancsok:** https://www.c-sharpcorner.com/blogs/types-of-sql-statements-with-example#:~:text=SQL%20statements%20are%20categorized%20into,TCL%20(TRANSACTION%20CONTROL%20LANGUAGE)
 
