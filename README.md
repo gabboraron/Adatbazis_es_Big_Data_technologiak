@@ -321,18 +321,75 @@ where e.department_id = dc.department_id;
 ```
 
 # EA3
-> **B fa**
+## Data Dictionary
+- In the case of Oracle Database, metadata is stored in the data dictionary
+- Data dictionary: Central, read-only reference tables and views
+- structure:
+  - Base tables: database information; only the database can read and write
+  - User-Accessible Views: Information displayed to users
+  - All base tables and user-accessible views are in the SYS schema
+- *example*: 
+  - user_tables:
+    - data from our own tables
+    - which table space you are in, statistics, etc.
+  - user_constraints:
+    - data of our own constraints
+    - name of the constraint, type to which field it applies, etc
+
+## Index structure
+- Extra structure in DB to speed up searches
+- You can index multiple fields in a table
+- An index can be built on multiple fields (composite index)
+- Unique and non-unique index
+- Main types:
+  - B-tree index
+  - Bitmap index
+- CREATE INDEX SQL statement
+- PK, unique constraint: automatic creation 
+
+> **B tree**
 > 
 > https://regi.tankonyvtar.hu/hu/tartalom/tamop425/0046_algoritmusok/ch06s07.html
 > 
 > ![B-fák](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3MIgYySEs1tCl9Uq1rU4qXZG0h5q1SSELwg&usqp=CAU)
 > 
 > ![indexelt b-fa](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYuSvHqM-y83JM2D2UcLmHwVgZYzN500WHYA&usqp=CAU)
+
+## SQL Processing
+> SQL processing is the parsing, optimization, row source generation, and execution of a SQL statement.
+
+ 1. for example a user execute a statement so oracle gets a query
+ 2. syntax check       (is there any typo )
+ 3. semantic check    (tables and their columns should exist)
+ 4. shared pool check (was this query executed earlier)     
+    - To this end, the database uses a hashing algorithm to generate a hash value for every SQL statement
+    - hash value is sqlid (deterministic so same statement has the same hash  value/sqlid)
+	  - *soft parse:* skip some interim steps like optimization, uses existing execution plan (sqlid should exist)
+	  - *hard parse* within a timeframe generates multiple plans, compares them; each plan has a cost; cost computation takes account into factors such as I/O, CPU, network cost, memory usage and so on
+
+![sql processing](https://docs.oracle.com/database/121/TGSQL/img/GUID-476CEA3E-17B5-454F-AD82-CF3FC19D81B1-default.gif)
+
+## SQL Optimizer concepts, terms
+> Query optimization is the overall process of choosing the most efficient means of executing a SQL statement.
 > 
-> ![sql processing](https://docs.oracle.com/database/121/TGSQL/img/GUID-476CEA3E-17B5-454F-AD82-CF3FC19D81B1-default.gif)
+> SQL is a nonprocedural language, so the optimizer is free to merge, reorganize, and process in any order.
+> 
+> An execution plan describes a recommended method of execution for a SQL statement.
+> 
+> Each step either retrieves rows of data physically from the database or prepares them for the user issuing the statement.
+
+The optimizer goal is to generate the most cost effective execution plan (final plan).How can Oracle do that?
+
+Based on the existing table statistics histograms within a time frame
+ 1. Ganerates multiple plans
+ 2. Compares them
+ 3. Select the most cost effective plan as final plan
+
+> **Cost:** In a given environment, the numerical value representing the estimated resource demand for the operation. The optimizer generates possible execution plans for an input SQL statement, uses statistics to estimate their costs, compares their costs, and then chooses the plan with the lowest cost.
 > 
 > ![cost based optimization](https://docs.oracle.com/database/121/TGSQL/img/GUID-D0B38295-1289-42A5-94CC-4F1857D00835-default.png)
-> 
+
+## SQL parsing pool check
 > **syntax check**: typo error
 > **semantic check**: wheter the meaning is bad, when a column not eexist or something same
 > **shared pool check**: determine if it can skip resource-intensive part
@@ -341,9 +398,18 @@ where e.department_id = dc.department_id;
 > 
 > **execution plan**
 > - each step returns row set
-> -
+> - row source can be a table, view, or result of a join or grouping operation
+> - The row source generator is software that receives the optimal execution plan from the optimizer and produces an iterative execution plan. The iterative plan is a binary program that, when executed by the SQL engine, produces the result set. 
 >  
 > ![row source tree](https://docs.oracle.com/database/121/TGSQL/img/GUID-CFA4215E-0CDC-4355-9722-FCF16C6CEAB7-default.gif)
+>
+> An execution plan is a set of steps that the optimizer performs when executing a SQL statement and performing an operation.
+
+### Access path
+RowID: shows where the record is physically located (file, block)
+- unique identifier for the record
+Read a single record based on RowID
+- very fast
 
 ```SQL
 explain plan for 
