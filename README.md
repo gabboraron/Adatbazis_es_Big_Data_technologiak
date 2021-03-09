@@ -141,27 +141,120 @@ If there is a table with columns `A,B,C` with `Primary Key (A)` and `C` is depe
 
 ![3nf decomp](https://image.slidesharecdn.com/bsccs-ii-dbms-u-iv-normalization-150317025645-conversion-gate01/95/bsc-cs-iidbmsuivnormalization-18-638.jpg?cb=1426561931)
 
-
-
-
-
-
-
-
-
 # EA2
 **alap SQL parancsok:** https://www.c-sharpcorner.com/blogs/types-of-sql-statements-with-example#:~:text=SQL%20statements%20are%20categorized%20into,TCL%20(TRANSACTION%20CONTROL%20LANGUAGE)
 
 ![adatbázis szerkezet](https://anuragpandeydba.files.wordpress.com/2017/12/logical_structure.png?w=636)
 
+> **Data blocks** are the smallest unit of I/O in the database. One data block corresponds to a specific number of bytes of physical space on the disk. The size of the data block can be set at the time of database creation. 
+> 
+> The default size of 8 KB is adequate for most databases.
+> - If your database supports a data warehouse application that has large tables and indexes, a larger block size may be beneficial. 
+> - If your database supports a transactional application in which reads and writes are random, specifying a smaller block size may be beneficial. 
+
+![segments,extents and blocks](http://4.bp.blogspot.com/_4aO57QMQCR0/STN82pBQRjI/AAAAAAAAAD0/gQHsnZ5_XOA/w1200-h630-p-k-no-nu/segment_extent_block.JPG)
+
+> - An extent consists of contiguous data blocks, which means that each extent can exist only in one data file.
+> - Database objects such as tables and indexes are stored as segments in tablespaces. Each segment contains one or more extents.
+> - A database is divided into logical storage units called tablespaces, which group related logical structures or data files together. 
+> - One or more data files are explicitly created for each tablespace to physically store the data of all segments in a tablespace. A tablespace’s data file can be physically stored on any supported storage technology. 
+
 ![table space and data files](https://i.stack.imgur.com/zf8RK.png) ![oracle database server architecture overview](https://cdn.thegeekdiary.com/wp-content/uploads/2019/05/Oracle-Database-Server-Architecture-memory-structures-768x468.png)
+
+> A database is divided into tablespaces (logical storage units used to group related logical structures). One or more data files are explicitly created for each tablespace to physically store the data of all logical structures in a tablespace. 
+> 
+> Tablespace 1, composed of two data files. A segment of 128 KB size, composed of two extents is spanning the two data files. The first extent of size 64 KB is in the first data file and the second extent, also of size 64 KB is in the second data file. Both extents are formed from contiguous 8 KB Oracle blocks. 
+> 
+> *Note: You can also create bigfile tablespaces, which have only one file that is often very large. The file may be any size up to the maximum that the row ID architecture permits. Traditional smallfile tablespaces (default) may contain multiple data files, but the files cannot be as large.*
+> 
+> `SYSTEM` and `SYSAUX` tablespaces are mandatory tablespaces that are created at the time of database creation. They must be onine.
+> - the `SSTEM` tablespacce is used for core functionality (for example, data dictionary tables)
+> - the axiliary `SYSAUX` tablespace is used for additional database components.
+> - the `SYSTEM` and `SYSAUX` tablespaces should not be used for application data.
+> 
+> Each Oracle database must contain a `SYSTEM` tablespace and a `SYSAUX` tablespace. They are automatically created when the database is created. A tablespace can be online (accessible) or offline (not accessible). 
+> 
+> The SYSTEM tablespace is always online when the database is open. It stores tables that support the core functionality of the database, such as the data dictionary tables. 
+> 
+> The SYSAUX tablespace is an auxiliary tablespace to the SYSTEM tablespace. 
+> 
+> *Note: The SYSAUX tablespace may be taken offline to perform tablespace recovery, whereas this is not possible for the SYSTEM tablespace*
+
 - when the server starts the oracle mount the database and all of the database is available.
 - each database have its control file. Without the control file it can't open the attached database.
 - **PGA** program global area
 - **SGA** system global area
 ![oracle database storage architecture](https://2.bp.blogspot.com/-PnJbbedG8jU/WJb5GsdelFI/AAAAAAAAWGQ/Zo03svC71V4bW8sRz2_mFMI635yp7Af2QCLcB/w1200-h630-p-k-no-nu/Oracle-Architecture-11g-In-Detailed.jpg)
 
+> There are three major structures in Oracle Database server architecture: memory structures, process structures, and storage structures. A basic Oracle database system consists of an Oracle database and a database instance. 
+> 
+> The instance consists of memory structures and background processes associated with that instance. Every time an instance is started, a shared memory area called the System Global Area (SGA) is allocated and the background processes are started. 
+> 
+> After starting a database instance, the Oracle software associates the instance with a specific database. This is called mounting the database. The database is then ready to be opened, which makes it accessible to authorized users. 
+ 
+![database storage architecture](https://cdn.thegeekdiary.com/wp-content/uploads/2019/05/Oracle-Database-Storage-Architecture.png)
+
+> The files that comprise an Oracle database are as follows: 
+> - **Control files:** Each database has one unique control file that contains data about the database itself. The control file is critical to the database. Without the control file, the database cannot be opened. 
+> - **Data files:** Contain the user or application data of the database, as well as metadata and the data dictionary 
+> - **Online redo log files:** Allow for instance recovery of the database. If the database server crashes and does not lose any data files, the instance can recover the database with the information in these files. 
+
+**System Global Area (SGA):** is shared by all server and background processes. Examples: cached data blocks and shared SQL areas. 
+
+**Program Global Areas (PGA):** A PGA is nonshared memory created by Oracle Database when a server or background process is started. Access to the PGA is exclusive to the server or to the background process. Each server process and background process has its own PGA. 
+
+> **Process architecture**
+> 
+> - **User process:** is the application or tool that connects to the oracle database.
+> - **database process:**
+>   - server process: connects to the oracle instanceadn is started when a user estabilishes a session
+>   - background process: are started when an oracle instance is started
+> - **daemon/application process:** network listeners and grid infrastructure daemons
+ 
+When a user runs an application program or an Oracle tool such as `SQL*Plus`, the term user process is used to refer to the user’s application. The user process may or may not be on the database server machine. 
+
+Oracle Database also creates a server process to execute the commands issued by the user process.
+
+In addition, the Oracle server also has a set of background processes for an instance that interact with each other and with the operating system to manage the memory structures, asynchronously perform I/O to write data to disk, and perform other required tasks.
+
 ![interacting with oracle database memory](https://image3.slideserve.com/6392087/interacting-with-an-oracle-database-memory-processes-and-storage-l.jpg)
+
+### Oracle database configuration
+> 
+> 1. An instance has started on a node where Oracle Database is installed (host or database server). 
+> 2. A user starts an application spawning a user process. The application attempts to establish a connection to the server. (local, client/server, or a three-tier connection from a middle tier.) 
+> 3. The server runs a listener that has the appropriate Oracle Net Services handler. The listener detects the connection request from the application and creates a dedicated server process on behalf of the user process. 
+> 4. The user runs a DML-type SQL statement and commits the transaction. 
+> 5. The server process receives the statement and checks the shared pool (an SGA component) that contains an identical SQL statement. If a shared SQL area is found, the server process checks the user’s access privileges to the requested data, and the existing shared SQL area is used to process the statement. If a shared SQL area is not found, a new shared SQL area is allocated for the statement so that it can be parsed and processed. 
+
+### DB transactions
+> - A transaction is a program unit whose execution may or may not change the contents of a database. 
+> - The transaction is executed as a single unit 
+> - If the database operations do not update the database but only retrieve data, this type of transaction is called a read-only transaction. 
+> - A successful transaction can change the database from one CONSISTENT STATE to another 
+DBMS transactions must be atomic, consistent, isolated and durable
+>
+> *Let’s take an example of a simple transaction: Suppose a bank employee transfers 500 HUF from A's account to B's account. This very simple and small transaction involves several low-level tasks*
+> 
+> ***A’s Account***
+> ```` SQL
+> Open_Account(A) 
+> Old_Balance = A.balance 
+> New_Balance = Old_Balance - 500 
+> A.balance = New_Balance 
+> Close_Account(A) 
+> ````
+>
+> ***B’s Account***
+> ``` SQL
+> Open_Account(B)
+> Old_Balance = B.balance
+> New_Balance = Old_Balance + 500
+> B.balance = New_Balance 
+> Close_Account(B) 
+> ```
+> 
+> A transaction in a database system must maintain Atomicity, Consistency, Isolation, and Durability − commonly known as ACID properties − in order to ensure accuracy, completeness, and data integrity.
 
 ## HR tábla
 
