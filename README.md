@@ -1,11 +1,13 @@
 # Adatbazis és Big Data technologiák
 
-- telepítési tmutató: http://analog.nik.uni-obuda.hu/Labor-VPC/12cR2/Oracle_12c_utmutato.pdf
+> **! EZ CSAK A SAJÁT JEGYZETEM AZ ÓRÁKRÓL, SEMMILYEN ZÁRT INFORMÁCIÓT NEM TARTALMAZ !**
+
+- telepítési útmutató: http://analog.nik.uni-obuda.hu/Labor-VPC/12cR2/Oracle_12c_utmutato.pdf
   - VM player innen: https://www.vmware.com/products/workstation-player/workstation-player-evaluation.html
 - telepítendő [Oracle Database 12c](https://www.oracle.com/database/12c-database/): http://analog.nik.uni-obuda.hu/Labor-VPC/12cR2/Oracle_12c.7z
 
-**Régi jegyzetek egyben:**
-- elémélet: https://github.com/gabboraron/adatb-ea, https://people.inf.elte.hu/kiss/12ab2osz/Adatbazisok_2.pdf
+## Régi adatbázis jegyzetek egyben:
+- elmélet: https://github.com/gabboraron/adatb-ea, https://people.inf.elte.hu/kiss/12ab2osz/Adatbazisok_2.pdf
   - régi adatb2 diasor: https://people.inf.elte.hu/molnarba/Adatb%e1zis2/ 
   - youtube előadás sorozat: https://www.youtube.com/playlist?reload=9&list=PLj4u_BOoK8OAFO0NZ3CkNRPOIe0gA98Ip
 - relációs algebra összefoglaló: https://github.com/gabboraron/adatb_gyakorlas_zh1
@@ -483,5 +485,405 @@ where table_name='EMPLOYEES'
 select endpoint_number, endpoint_valuse
 from user_
 ````
+# EA 5 - ZH
+# EA 6 - Apache Cassandra, SQL in NoSql world
+- https://afteracademy.com/blog/what-is-the-difference-between-dbms-and-rdbms
+-[techterms.com/definition/rdbms](https://techterms.com/definition/rdbms#:~:text=Stands%20for%20%22Relational%20Database%20Management,format%2C%20using%20rows%20and%20columns.)
+
+![sql to nosql](https://media-exp1.licdn.com/dms/image/C5112AQEKZTwVN0S-qA/article-cover_image-shrink_600_2000/0/1581239649079?e=1622073600&v=beta&t=RGw9mJKeghFAOH4p0peHh696dMfJllen7rsDiGzufYQ)
+
+| pro        | con           | 
+| ------------- |:-------------:|
+| proven      | designed for single machines, hard to scale |
+| reliable      | rigid schema |
+| general purpose | locking issues|
+| well known | expensive, the free options are for small projects |
+
+Around 2006-2007 Amazon and google anounced their bigdata platforms:
+
+![diamond vs bigtable](https://image.slidesharecdn.com/presentation-150407072702-conversion-gate01/95/dynamo-and-bigtable-review-and-comparison-15-638.jpg?cb=1428391898) ![who uses dimond and bigtable](https://img.stackshare.io/stackup/455614/amazon-dynamodb-vs-google-cloud-bigtable.png)
+
+## what is NOSQL
+- we do have SQL
+- not only SQL
+- graph databases are all about relations
+
+![nosql usage](https://www.thorntech.com/wp-content/uploads/2019/01/SQLvsNoSQL.jpg)
+
+**Main drivers:**
+- flexible schema
+- scalability
+
+## Cassandra
+code example: https://github.com/gabboraron/cassandra-workshop
+- key-value store: the value can be any object or anything
+- document store: hierarchical JSON structure
+- column store: value is a map directory
+
+> - Master-less architecture
+> - Multi-DC support, active anywhere
+> - Eventual consistency
+> - Tunable consistency
+> - Durability & Performance
+
+![What is a Graph Database and Why Should You Care?](https://miro.medium.com/max/875/1*8Za0wYRVykspOTL2nSohng.png) ![A Comprehensive Analysis - NoSQL vs RDBMS](https://media-exp1.licdn.com/dms/image/C4E12AQHHQZ08-kG44w/article-inline_image-shrink_1000_1488/0/1520482861155?e=1622073600&v=beta&t=qfJ5taHLw62m2UZ2v_3XpxQRZz8rl7tzwv3goqd4MDM)
+*more: https://www.linkedin.com/pulse/comprehensive-analysis-nosql-vs-rdbms-rassul-fazelat*
+
+### Column store
+![example](https://media-exp1.licdn.com/dms/image/C4E12AQHssul0rIFjcw/article-inline_image-shrink_1000_1488/0/1520201057315?e=1622073600&v=beta&t=GCA2mobhI6vNjMKb_LZTKovJxk8bPbVc3XFBURog03A)
+
+- we start a column name in a row
+- we can store huge number of rows, in cassandra 2 000 000
+- map of maps 
+
+### CQL
+> Cassandra's SQL interface
+> 
+> https://cassandra.apache.org/doc/latest/cql/
+
+demo code: https://github.com/gabboraron/cassandra-workshop/blob/main/demo/1-insert-update.md
+
+**setting up the enviroment:**
+- online
+  1. register on https://labs.play-with-docker.com/ with that you have a 4 hour session
+  2. `git clone https://github.com/gabboraron/cassandra-workshop.git`
+  3. `cd cassandra-workshop`
+  4. done
+- offline
+  1. install an onether VM or the [docker](https://www.docker.com/get-started)
+  2. password for VM: OEnik123
+  3. `git clone https://github.com/gabboraron/cassandra-workshop.git`
+  4. `cd cassandra-workshop`
+  5. done
+
+**files/folders:**
+- `cluster/`
+  - `cluster/docker-compose.yml`: describes 2 nodes  
+    ```Shell
+    node1:
+    image: cassandra:3.11
+    ports:
+      - "9042:9042"
+      - "9160:9160"
+    environment:
+      CASSANDRA_CLUSTER_NAME: demo
+      CASSANDRA_SEEDS: node1,node2
+    volumes:
+      - ./nobel:/nobel
+    restart: unless-stopped
+    
+    node2:
+    image: cassandra:3.11
+    environment:
+      CASSANDRA_CLUSTER_NAME: demo
+      CASSANDRA_SEEDS: node1,node2
+    restart: unless-stopped
+    ```
+  - `cluster/01-start.sh` start cluster
+  - `cluster/99-stop.sh` stop cluster
+  - `cluster/node1-shell.sh` open a session inside the docker container
+
+**After start:** 
+- `nodetool status` where you can see *status*: `Up` - `U`and a *state*: `normal` - `N`
+- `cqlsh` - CQLshell, which gives an SQL like command line
+
+#### Creating a Keyspace:
+```
+CREATE KEYSPACE demo
+WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+USE demo;
+```
+#### Create table:
+```SQL
+CREATE TABLE user
+(
+  id int,
+  name text,
+  PRIMARY KEY (id)
+);
+```
+Here the primary key is mandatory.
+
+#### Upload table with records:
+```CQL
+INSERT INTO user (id, name)
+VALUES ( 1, 'Ada Lovelace');
+```
+
+**Without autowarning, the cassanda rewrites the row, eith the same key!**
+```CQL
+INSERT INTO user (id, name)
+VALUES ( 1, 'Charles Babbage');
+```
+We can check what is in database like in SQL:`SELECT * FROM user;`
+
+**Also we don't get error if we *update* an non existing row, but the row become inserted:**
+```CQL
+UPDATE user
+SET name = 'Linus Torvalds'
+WHERE id = 2;
+```
+> Only specified columns are written, not the whole row.
+
+#### CQL data types
+https://docs.datastax.com/en/cql-oss/3.x/cql/cql_reference/cql_data_types_c.html
+- Primitive types
+  - int, tinyint, smallint, bigint
+  - decimal, float, double
+  - text (varchar), ascii
+  - timestamp, date, time
+  - uuid, timeuuid
+  - blob
+  - inet
+- Collection types
+  - list<T>
+  - set<T>
+  - map<TKey, Tvalue>
+
+> Each collection element is mapped to a distinct cell in the underlying data structure.
+>
+> Frozen types are mapped to a single cell (serialized)
+
+- User defined types
+  ```CQL
+  CREATE TYPE article
+  (
+    id int,
+    name text,
+    price decimal
+  );
+  
+  CREATE TABLE invoice 
+  (
+    id int PRIMARY KEY,
+    buyer text,
+    items list<frozen<article>>
+  );
+  ```
+more example: https://github.com/gabboraron/cassandra-workshop/blob/main/demo/2-data-types.md
+
+##### User defined types
+```CQL
+CREATE TYPE article
+(
+  id int, 
+  name text, 
+  price decimal
+);
+
+CREATE TABLE invoice 
+(
+  id int PRIMARY KEY, 
+  buyer text, 
+  items list<frozen<article>>
+);
+
+INSERT INTO invoice (id, buyer, items) 
+VALUES (1, 'Joe', [
+  {id: 1, name: 'Book', price: 11.99}, 
+  {id: 2, name: 'Computer', price: 3333}
+]);
+
+SELECT * FROM invoice;
+
+UPDATE invoice 
+SET items = items + [{id: 3, name: 'Cable', price: 1.00}] 
+WHERE id = 1;
+
+DELETE items[1] FROM invoice WHERE id = 1;
+```
+
+#### Architecture
+> How can we create scalable databases?
+> 
+> NOSQL databases use horizontal partitioning, which let to dvidie talbes in different parts horizontally.
+> 
+> ![scale up vs scale out](https://miro.medium.com/max/750/0*AgVS92bhDliNs-dc.png)
+ 
+*scale out example:*
+```
+original database: 
+
+city		country		region
+Lisbon		Portugal	Europe
+London		UK		Europe
+Seattle		US		N. America
+L.A.		US		N. America
+```
+dvide by region, 1st table:
+```
+city		country		region
+Lisbon		Portugal	Europe
+London		UK		Europe
+```
+
+dvide by region, 2nd table:
+```
+city		country		region
+Seattle		US		N. America
+L.A.		US		N. America
+```
+
+#### Partitioning
+> The `key` value is converted into `hash value` based on hash value the data is divided between nodes.
+> 
+> ![hash based database](https://www.scnsoft.com/blog-pictures/business-intelligence/cassandra-performance-2.png)
+> 
+> ##### virtual nodes
+> https://www.datastax.com/blog/virtual-nodes-cassandra-12
+> 
+> ![virtual node](https://www.datastax.com/sites/default/files/inline-images/VNodes1.png)
+
+#### Replication
+> if we have more nodes than more nodes can solve our querry
+> 
+> - **resilience:** the more nodes we have the more likey some fail
+> - **throughput:** mre replicas can serve more requests
+> - **replication factor:** nr of nodes that store the data, 3 is a typical value in production
+> - **replication strategy:** 
+>   - simpleStrategy
+>   - Network topology strategy 
+>   
+>   ![https://image.slidesharecdn.com/replicationandconsistencyincassandra-161004031236/95/replication-and-consistency-in-cassandra-what-does-it-all-mean-christopher-bradford-datastax-c-summit-2016-21-638.jpg?cb=1475600022](https://image.slidesharecdn.com/replicationandconsistencyincassandra-161004031236/95/replication-and-consistency-in-cassandra-what-does-it-all-mean-christopher-bradford-datastax-c-summit-2016-21-638.jpg?cb=1475600022)![https://image.slidesharecdn.com/replicationandconsistencyincassandra-161004031236/95/replication-and-consistency-in-cassandra-what-does-it-all-mean-christopher-bradford-datastax-c-summit-2016-17-638.jpg?cb=1475600022](https://image.slidesharecdn.com/replicationandconsistencyincassandra-161004031236/95/replication-and-consistency-in-cassandra-what-does-it-all-mean-christopher-bradford-datastax-c-summit-2016-17-638.jpg?cb=1475600022)
+>   
+> Network topology is better for data centers, where cassandra can optimize for rack's and computers.
+> 
+> Cassandra doesn't have master and slave replica, nodes are identical! Any replica can solve any querry, so this is an advantage for accelerate queries.
+> 
+> #### Multi datacenter replication
+> This is also used for geographically distributed datacenters.
+> 
+> ![https://image.slidesharecdn.com/searchingcassandrakn-150805184146-lva1-app6891/95/solr-cassandra-searching-cassandra-with-datastax-enterprise-12-638.jpg?cb=1438800199](https://image.slidesharecdn.com/searchingcassandrakn-150805184146-lva1-app6891/95/solr-cassandra-searching-cassandra-with-datastax-enterprise-12-638.jpg?cb=1438800199)
+>
+> This is a master-master replication! 
+>
+> ##### Hinted Handoff  
+> If a one of a nodes which have to store the data is not available then the system stores the data while the node is not active again.
+> 
+> ![https://image.slidesharecdn.com/insidecassandra-130925142231-phpapp01/95/a-deep-dive-into-understanding-apache-cassandra-10-638.jpg?cb=1380119062](https://image.slidesharecdn.com/insidecassandra-130925142231-phpapp01/95/a-deep-dive-into-understanding-apache-cassandra-10-638.jpg?cb=1380119062)
+
+##### replication implications
+If the client goes to a node where the data is not replicated yet then this means incosistent read (we talk about milliseconds).
+
+![pick two](https://www.researchgate.net/profile/Mahmud-Shertil/publication/324922396/figure/fig5/AS:622261539188744@1525370120519/The-CAP-Theorem-Many-of-the-NOSQL-databases-have-loosened-up-the-requirements-on.png)![database types based on pick two](https://i.imgur.com/x1Qyurg.png)
+
+**Consistency is overrated!** Most of the times we don’t need full consistency… ... but sometimes we do.
+
+increasing consistnecy level makes we sure about consistency:
+
+![increasing consistnecy level makes we sure about consistency](https://image.slidesharecdn.com/insidecassandra-130925142231-phpapp01/95/a-deep-dive-into-understanding-apache-cassandra-9-638.jpg?cb=1380119062)
+
+#### Examples
+https://github.com/gabboraron/cassandra-workshop/blob/main/demo/3-architecture.md
+
+**Setup Data**
+* Table of Nobel Laureates, partitioned by year
+* Cassandra Cluster with 3 nodes
+* Replication factor of 2
+
+```bash
+# Add a third node
+docker-compose scale node2=2
+
+# Open shell on node1
+./node1-shell.sh bash
+
+# Start CQL shell
+cqlsh
+```
+
+```sql
+-- create keyspace
+CREATE KEYSPACE nobel
+WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 2}; 
+-- specified replication strategyand replication factor, here all of the data is stored on 2 different computers.
+
+
+-- create table
+CREATE TABLE nobel.laureates
+(
+  laureateid int,
+  firstname text,
+  surname text,
+  borncountrycode text,
+  borncity text,
+  year int,
+  category text,
+  PRIMARY KEY (year, laureateid)
+);
+
+-- ingest data from CSV file
+COPY nobel.laureates (year, category, laureateid, firstname, surname, borncountrycode, borncity)
+FROM '/nobel/laureates.csv';
+
+-- test data
+SELECT * FROM nobel.laureates WHERE year = 2010;
+```
+
+#### Partitioning and Replication
+
+```bash
+# Exit CQL shell (Ctrl+D)
+
+# check cluster status (3 nodes, 3 IP addresses)
+nodetool status
+
+# check which node(s) hold the partition
+nodetool getendpoints nobel laureates 2010
+nodetool getendpoints nobel laureates 2012
+nodetool getendpoints nobel laureates 2013
+
+# what happens for a missing partition? Nothing... we get back the two nodes
+nodetool getendpoints nobel laureates 3000
+```
+
+#### Consistency
+
+```bash
+# Exit node1 shell (Ctrl+D)
+
+# Kill one of the nodes
+docker stop cluster_node2_1
+
+# Open node1 shell
+./node1-shell.sh
+
+# Check cluster status
+nodetool status
+
+# Open CQL shell
+cqlsh
+```
+
+```sql
+-- Is my cluster operational?
+SELECT * FROM nobel.laureates WHERE year = 2010; 
+SELECT * FROM nobel.laureates WHERE year = 2012;
+SELECT * FROM nobel.laureates;
+```
+
+#### Tunable Consistency
+
+```sql
+-- Let's use higher consistency
+CONSISTENCY QUORUM;
+
+-- Is my cluster operational?
+SELECT * FROM nobel.laureates WHERE year = 2010;
+SELECT * FROM nobel.laureates WHERE year = 2012;
+SELECT * FROM nobel.laureates WHERE year = 2013;
+```
+
+#### Terminate cluster
+
+```bash
+# Exit CQL shell (Ctrl+D)
+# Exit node1 shell (Ctrl+D)
+
+# Terminate cluster
+./99-stop.sh
+```
+
+![write path in cassandra](https://static.packt-cdn.com/products/9781789131499/graphics/d8cba1d6-07f7-404e-a4e3-d73233474f3e.png) ![read path in cassandra](https://uberdev.files.wordpress.com/2015/11/c8bd49ae-edd4-48c0-8935-6877acfe90ac-1.png)
 
 
