@@ -773,14 +773,14 @@ increasing consistnecy level makes we sure about consistency:
 
 ![increasing consistnecy level makes we sure about consistency](https://image.slidesharecdn.com/insidecassandra-130925142231-phpapp01/95/a-deep-dive-into-understanding-apache-cassandra-9-638.jpg?cb=1380119062)
 
-#### Examples
-https://github.com/gabboraron/cassandra-workshop/blob/main/demo/3-architecture.md
-
-**Setup Data**
-* Table of Nobel Laureates, partitioned by year
-* Cassandra Cluster with 3 nodes
-* Replication factor of 2
-
+> #### Examples
+> https://github.com/gabboraron/cassandra-workshop/blob/main/demo/3-architecture.md
+>
+> **Setup Data**
+> * Table of Nobel Laureates, partitioned by year
+> * Cassandra Cluster with 3 nodes
+> * Replication factor of 2
+>
 ```bash
 # Add a third node
 docker-compose scale node2=2
@@ -886,4 +886,616 @@ SELECT * FROM nobel.laureates WHERE year = 2013;
 
 ![write path in cassandra](https://static.packt-cdn.com/products/9781789131499/graphics/d8cba1d6-07f7-404e-a4e3-d73233474f3e.png) ![read path in cassandra](https://uberdev.files.wordpress.com/2015/11/c8bd49ae-edd4-48c0-8935-6877acfe90ac-1.png)
 
+### Deep dive in CQL
+**Primary key**
+- is mandatory
+- is unique
+- determines partitioning 
 
+```CQL
+CREATE TABLE movies
+(
+  id int,
+  name text,
+  runtime int,
+  year int,
+  PRIMARY KEY (id)
+);
+```
+### PRIMARY KEY = PARTTION KEY + CLUSTERING KEY
+>
+> ![primary key](https://24b4dt1v60e526bo2p349l4c-wpengine.netdna-ssl.com/wp-content/uploads/2019/08/Cassandra-Partitions-Partition-and-Clustering-Key.png)
+>
+> **clustering key:** determines the sorting of columns in that row.
+> 
+> **partition key:** resposinsibel for partitioning the data in different rows.
+>
+```CQL
+CREATE TABLE movies (
+  id int,
+  name text,
+  runtime int,
+  year int,
+  PRIMARY KEY (year, name)
+);
+```
+
+### Static column
+```CQL
+CREATE TABLE movies (
+  id int,
+  name text,
+  runtime int,
+  year int,
+  oscar_winner text static,
+  PRIMARY KEY (year, name)
+);
+```
+> Columns where the data is the same, can be stored only once. 
+>
+> ![static columns](https://raw.githubusercontent.com/ippontech/blog-usa/master/images/2015/04/cassandra_one_to_many_logical_view.png)
+
+> #### Example
+> https://github.com/gabboraron/cassandra-workshop/blob/main/demo/4-primary-key.md
+> ##### Primary Key
+> 
+> * PRIMARY KEY is just a notation for PARTITION KEY & CLUSTERING KEY
+> * PARTITION KEY is mandatory
+> * CLUSTERING KEY is optional
+> 
+> ###### Nobel dataset
+> 
+```bash
+# Create new cluster
+./01-start.sh
+
+# Open node1 shell
+./node1-shell.sh
+
+# Open CQL shell (might need to wait a minute)
+cqlsh
+```
+> 
+> * CSV file: [`cluster/nobel/laureates.csv`](https://github.com/gabboraron/cassandra-workshop/blob/main/cluster/nobel/laureates.csv)
+> * Create a table that is partitioned by `borncountrycode`
+>
+```sql
+-- create table
+CREATE TABLE nobel.laureates
+(
+  laureateid int,
+  firstname text,
+  surname text,
+  borncountrycode text,
+  borncity text,
+  year int,
+  category text,
+  PRIMARY KEY (borncountrycode, laureateid)
+);
+
+COPY nobel.laureates (year, category, laureateid, firstname, surname, borncountrycode, borncity)
+FROM '/nobel/laureates.csv';
+```
+>
+> * Note that we need to add `laureateid` for uniqueness
+> * Partition key: `borncountrycode`
+> * Clustering key: `laureateid`
+>
+>
+> ###### Query nobel dataset
+>
+```sql
+USE nobel;
+
+-- efficient, we query by partition key 
+SELECT * FROM laureates WHERE borncountrycode = 'HU';
+```
+>
+> ###### Static column
+>
+> Stored once by partition key
+>
+```sql
+-- add new static column
+ALTER TABLE laureates ADD borncountry text static;
+
+-- check table
+SELECT * FROM laureates WHERE borncountrycode = 'HU';
+
+-- update column (needs to write a single cell)
+UPDATE laureates SET borncountry='Hungary' WHERE borncountrycode='HU';
+
+-- check table
+SELECT * FROM laureates WHERE borncountrycode = 'HU';
+
+-- add new record without specifying borncountry
+INSERT INTO laureates (borncountrycode , laureateid, category, surname, year) 
+VALUES ('HU', 1001, 'Cassandra', 'Óbuda University', 2020);
+
+-- check table
+SELECT * FROM laureates WHERE borncountrycode = 'HU';
+
+-- add new record
+INSERT INTO laureates (borncountrycode , borncountry, laureateid, category, surname, year) 
+VALUES ('HU', 'Magyarország', 1002, 'Cassandra', 'Óbuda University', 2021);
+```
+>
+> -----------------------------
+> 
+> #### Filtering example
+> https://github.com/gabboraron/cassandra-workshop/blob/main/demo/5-filtering-ordering.md
+> 
+> ##### Filtering
+>
+```sql
+USE nobel;
+
+SELECT * FROM laureates LIMIT 10;
+
+SELECT * FROM laureates WHERE borncountrycode = 'HU';
+
+SELECT * FROM laureates WHERE borncountrycode IN ('HU', 'AT');
+```
+>
+```sql
+SELECT * FROM laureates WHERE year = 2010;
+
+-- not recommended (does not scale)
+SELECT * FROM laureates WHERE year = 2010
+ALLOW FILTERING;
+
+CREATE INDEX ON laureates (year);
+
+SELECT * FROM laureates WHERE year = 2010;
+```
+> we can create indexes and we can use it queries,
+> ###### Ordering
+>
+```sql
+USE nobel;
+
+SELECT * FROM laureates WHERE borncountrycode = 'HU';
+-- notice that records are sorted by laureateid (clustering key)
+
+SELECT * FROM laureates WHERE borncountrycode IN ('HU','AT');
+-- notice that records are sorted by laureateid only within the partition key
+
+-- we can reverse the ordering
+SELECT * FROM laureates WHERE borncountrycode = 'HU'
+ORDER BY laureateid DESC;
+
+-- Let's sort by year
+SELECT * FROM laureates WHERE borncountrycode = 'HU'
+ORDER BY year;
+
+-- We can only order by clustering key
+
+CREATE TABLE laureates_by_category (
+  year int,
+  laureateid int,
+  borncity text,
+  borncountrycode text,
+  category text,
+  firstname text,
+  surname text,
+  PRIMARY KEY (category, year, laureateid))
+WITH CLUSTERING ORDER BY (year DESC);
+
+COPY laureates_by_category (year, category, laureateid, firstname, surname, borncountrycode, borncity)
+FROM '/nobel/laureates.csv';
+
+SELECT * FROM laureates_by_category WHERE category = 'physics'; --who get nobel prize in physics
+SELECT * FROM laureates_by_category WHERE category = 'physics' LIMIT 5;
+SELECT * FROM laureates_by_category WHERE category = 'physics' ORDER BY year LIMIT 5;
+```
+
+#### filtering by key:
+  ```CQL
+  CREATE TABLE table1 (
+  	pk int,
+	ck1 int,
+	ck2 text,
+	PRIMARY KEY (pk, ck1, ck2)
+  );
+  ```
+  
+- partition key
+  ```CQL
+  -- When filtering by partition key
+  -- values must be specified exactly
+  -- (inequality operators are not supported)
+  SELECT * FROM table1 WHERE pk = 2;
+  -- IN operator is also supported
+  --  CAUTION: it can overload the cluster!
+  SELECT * FROM table1 WHERE pk IN (1, 3, 5);
+  ```
+- by partition key and clustering key
+  ```CQL
+  -- Inequality operators for clustering columns
+  SELECT * FROM table1 WHERE pk = v1
+  AND ck1 >= v2;
+  
+  -- ERROR! ck1 is not restricted 
+  SELECT * FROM table1 WHERE pk = v1
+  AND ck2 = v2;
+  
+  -- ERROR! Must restrict ck1 by equality
+  SELECT * FROM table1 WHERE pk = v1
+  AND ck1 >= v2 AND ck2 <= v3;
+  
+  -- Slicing. can combine clustering columns
+  SELECT * FROM table1 WHERE pk = v1
+  AND (ck1, ck2) >= (v1, v2);
+  ```
+
+#### secondary indexes
+```CQL
+CREATE TABLE track (
+	track_id int,
+	title text,
+	album text,
+	artist text,
+	PRIMARY KEY(album, track_id)
+);
+
+-- ERROR! 
+-- Cannot filter on non-key, non-indexed fields
+
+SELECT * FROM track WHERE artist = 'U2';
+CREATE INDEX ON track(artist);
+
+-- OK. filter by secondary index
+
+SELECT * FROM track WHERE artist = 'U2’;
+```
+
+**Cons:**
+- Secondary indexes are much slower than keys
+- Indexes are maintained on each node, thus queries are affecting the whole cluster
+
+**Pro:**
+- Performance could be enough. Measure.
+- Fast, if previously filtered by partition key:
+
+```CQL
+SELECT * FROM track 
+WHERE album = 'Joshua Tree'
+AND artist = 'U2';
+```
+
+#### ordering
+> - Records within a partition are **ALWAYS sorted by clustering key (ASC by default)**
+> - `ORDER BY` is only valid on clustering keys and can only change direction
+>   - `WITH CLUSTERING ORDER BY` – can *change the default ordering* to **DESC**
+ 
+```CQL
+-- Can change the default clustering order (ASC)
+CREATE TABLE transaction (
+	accountnr text, 
+  	transactiondate timestamp,
+	recipient text, 
+  	amount decimal,
+	PRIMARY KEY (accountnr, transactiondate)
+) 
+WITH CLUSTERING ORDER BY 
+(transactiondate DESC);
+```
+
+Good practice for mesurement data, because we know which was first.
+
+```CQL
+-- Records are sorted in DESC order
+SELECT * FROM transaction WHERE accountnr = '001';
+
+-- Records are sorted in ASC order
+-- (slower if the clustering order doesn't match)
+SELECT * FROM transaction WHERE accountnr = '001'
+ORDER BY transactiondate;
+
+-- Records are sorted in DESC order
+SELECT * FROM transaction WHERE accountnr = '001'ORDER BY transactiondate DESC;
+```
+
+
+#### Deleeions
+> After deleting data will be replaced by an tombstone, to avoid the replacement from an another replica. When all node recieved this then will be deleted.
+>
+Time to live feature, is to use the data and after a specified time will be deleted.
+```
+-- Delete a row
+DELETE FROM table1 WHERE pk = value;
+
+-- Time to live feature (seconds)
+-- Row is deleted on expiry
+INSERT INTO table1 (pk, f1)
+VALUES (v1, v2)
+USING TTL 60;
+```
+
+### Limitations of CQL
+> **NO JOINS** Expensive, don’t scale
+>
+> **Limited WHERE** (as seen before): By keys & secondary index
+>
+> **Limited ORDER BY** (as seen before): By clustering key, can change direction
+>
+> **Limited GROUP BY** and aggregates (since 2.2): 
+> - Aggregates: COUNT, SUM, MIN, MAX, AVG
+> - Only by fields of the primary key (in order)
+>
+> **Limited SELECT DISTINCT**: For partition keys and static columns, used to retrieve static part of the table.
+
+### Couter tables
+> there is no single point to track which was the last id, the cassandra solution for this is Counter table. Counter is a field type, value is used to generate new values.
+
+Only contain primary keys and counter.
+```CQL
+-- Only key and counter columns are allowed 
+CREATE TABLE employee_counter (
+	employeeid bigint,
+	year int,
+	vacation_days counter,
+	badges counter,
+	PRIMARY KEY (employeeid, year)
+);
+```
+
+Whith the table above it will track synchronisation between nodes. We can only incrase or decrase the value, but we can't set it!
+```CQL
+-- Update counter is the only operation allowed
+UPDATE employee_counter
+SET badges = badges + 1
+WHERE employeeid = 1 AND year = 2016;
+
+-- ERROR: Cannot set, just increment/decrement
+UPDATE employee_counter
+SET badges = 17
+WHERE employeeid = 1 AND year = 2016;
+```
+example: https://github.com/gabboraron/cassandra-workshop/blob/main/demo/6-advanced.sql
+
+### Transcrtions
+> In Cassandra we don't have transactioins at all, what we have are `Batches`. 
+> 
+> The operations are not isolated! So other usesr can see the record until it is not rolled back!
+> 
+> Execution order is not deterministic!
+
+Here we have a begin and an apply batch.
+```CQL
+BEGIN BATCH
+INSERT INTO track_by_artist ...
+INSERT INTO track_by_album  ...
+APPLY BATCH;
+```
+
+#### Lightweight transactions
+> 
+```CQL
+-- Verify by primary key
+INSERT INTO users (username, name, passwordhash)
+VALUES ('ada', 'Ada Lovelace', '20a46ee0')
+IF NOT EXISTS;
+
+-- Verify by any field
+UPDATE users
+SET passwordhash = '20a5f580'
+WHERE username = 'ada'
+IF passwordhash = ‘FFa46ee0';
+```
+
+### Materialized view
+> between the table and the view. It behieves like a view, but it is actually stored phisically. It is efficient to use sync data between tables.
+
+```CQL
+CREATE MATERIALIZED VIEW laureates_by_category AS
+	SELECT * FROM nobel_laureates
+	-- primary key fields must be non-null
+	WHERE category IS NOT NULL 
+    	AND laureateid IS NOT NULL
+PRIMARY KEY (category, year, laureateid)
+WITH CLUSTERING ORDER BY 
+(year DESC, laureateid ASC);
+```
+
+```CQL
+-- create table what we needs
+
+USE nobel;
+
+-- drop previously created tables;
+DROP TABLE laureates;
+DROP TABLE laureates_by_category;
+
+CREATE TABLE laureates_by_year
+(
+  year int,
+  category text,
+  laureateid int,
+  firstname text,
+  surname text,
+  borncountrycode text,
+  borncity text,
+  PRIMARY KEY (year, laureateid)
+);
+
+-- create a second table
+COPY laureates_by_year (year, category, laureateid, firstname, surname, borncountrycode, borncity)
+FROM '/nobel/laureates.csv';
+-----------------------------------------------
+
+CREATE MATERIALIZED VIEW laureates_by_category AS
+  SELECT * FROM laureates_by_year
+  -- primary key fields must be non-null
+  WHERE category IS NOT NULL AND laureateid IS NOT NULL
+PRIMARY KEY (category, year, laureateid)
+WITH CLUSTERING ORDER BY (year DESC, laureateid ASC);
+
+--------------------------------------------------
+-- test it:
+INSERT INTO laureates_by_year
+(year, laureateid, category, firstname)
+VALUES (2021, 9999, 'Cassandra', 'Óbuda University');
+
+--see the changes: 
+SELECT * FROM laureates_by_year WHERE year = 2021;
+
+SELECT * FROM laureates_by_category
+WHERE category = 'Cassandra';
+```
+
+### JSON support
+```CQL
+USE demo;
+
+CREATE TABLE contacts (
+    id bigint PRIMARY KEY,
+    name text,			
+    phones map<text, text> 	
+);
+
+--insert JSON data into table:
+
+INSERT INTO contacts JSON
+'{
+  "id": 2,
+  "name": "epam",
+  "phones":
+  {
+    "Budapest": "+36 1 3277400",
+    "Szeged": "+36 62 550656"
+  }
+}';
+```
+Then we will get actual representation, not a string!
+
+### Take away:
+> - CQL is built on top of internal data structure
+> - Primary Key = Partition Key + Clustering Key
+> - Upsert: Inserts and Updates are equivalent
+> - Writes without read
+> - Collections are stored by element
+> - Think performance:
+>   - Filter by key (and secondary index)
+>   - Limited Aggregations
+> - Lightweight Transactions
+
+### Modeling rules
+> Without a good understanding how data will be used it's impossible to create a good database.
+
+- DESIGN BY QUERY
+  - Enumerate all possible queries; and design the tables to support them.
+- SECONDARY INDEXES
+  > for performance is bad, but for usage is great
+  - Facilitate search by non-key columns.
+  - WARNING: they are much slower than lookups by key. Measure performance if needed.
+  - Secondary indexes can be FAST when data is already filtered by partition key.
+- De-NORMALIZE TABLES
+  - Embed 1-to-1 relationships as extra fields or used defined types.
+  - Embed 1-to-n relationships as collections or clustering keys.
+- DUPLICATE TABLES
+  > don't afraid from duplacating tables!
+  - Create more tables with the same content, but different partition key, and update both.
+  - Consider using index tables to preserve space (only store the primary key of the main table)
+  - Use Materialized Views.
+
+#### `1-TO-MANY` relationships
+> easy to store in cassandra
+> 
+> imgaine we want to store invoices, invoice has:
+> - header: information about seller and buyer
+> - detail: the `n` part of relation, many things ca be there
+
+clustering by static fields:
+```CQL
+CREATE TABLE invoice (
+	-- header fields
+	invoice_id bigint,
+	issuer text static,
+	address text static,
+	total_price decimal static,
+	
+	-- detail fields
+	article_id int,
+	article_name text, 
+	price decimal,
+  
+	-- primary key
+	PRIMARY KEY (invoice_id, article_id) --partitin key will be the ID, so we choose the article ID
+);
+```
+
+header:
+```CQL
+-- retrieve header information only
+SELECT DISTINCT
+issuer, address, total_price --list only the static columns
+FROM invoice
+WHERE invoice_id = 1111;
+```
+
+detail:
+```CQL
+-- retrieve whole invoice
+SELECT * FROM invoice
+WHERE invoice_id = 1111;
+```
+
+#### DESIGN BY QUERY
+> still can create a conceptual data:
+
+![example realtionship](https://media.geeksforgeeks.org/wp-content/uploads/20191003155956/ER_diag.jpg)
+
+- Design a conceptual model for your domain
+- Go through your queries and design a table for each
+- Consider reusing a table for a different query only if you can do it efficiently
+
+#### data duplication
+![gossiping](https://blog.yugabyte.com/wp-content/uploads/2018/10/cassandra-arch-1024x717.png)
+
+> We have an original table byalbums, and an other by artist, and we have to maintaint the relation between two.
+
+**Original table**
+```CQL
+CREATE TABLE track_by_album (
+	track_id int,
+	title text, -- other fields
+	album text,
+	artist text,
+	PRIMARY KEY(album, track_id)
+);
+```
+
+**Duplicate table**
+```CQL
+CREATE TABLE track_by_artist (
+	track_id int,
+	title text, -- other fields
+	album text,
+	artist text,
+	PRIMARY KEY(artist, track_id)
+);
+```
+
+**index table**
+```CQL
+CREATE TABLE album_by_artist (
+	album text,
+	artist text,
+	PRIMARY KEY(artist, album)
+);
+-- first select albums by artist
+-- then select tracks from original table by album
+```
+
+**Materialized View**
+```CQL
+CREATE MATERIALIZED VIEW track_by_artist AS
+	SELECT * FROM track_by_album
+	WHERE artist IS NOT NULL
+  	AND track_id IS NOT NULL
+PRIMARY KEY (artist, album, track_id);
+```
+
+#### lab exercise
+files: https://github.com/gabboraron/cassandra-workshop/tree/main/labwork
