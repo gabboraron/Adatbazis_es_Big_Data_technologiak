@@ -1694,4 +1694,17 @@ files: https://github.com/gabboraron/cassandra-workshop/tree/main/labwork
   select department_id from departments d 
   where not exists (select 1 from employees e where e.department_id = d.department_id);
   ```
--   
+- execution plan *(we need to know what indexes exist for the tables)*:
+  - user_indexes
+  - user_ind_columns
+  ```SQL
+  SELECT user_indexes.table_name, index_name,
+  column_name, column_position, uniqueness
+  FROM user_indexes 
+  INNER JOIN user_ind_columns USING (index_name)
+  ORDER BY 1, 2, 4;
+  ```
+
+    
+
+-------
