@@ -1594,6 +1594,15 @@ files: https://github.com/gabboraron/cassandra-workshop/tree/main/labwork
     CROSS JOIN table2;
     ```
   - NATURAL JOIN: *Specifies an inner or outer join between two tables. It has no explicit join clause. Instead, one is created implicitly using the common columns from the two tables.*   
+- get an 5 days interval from today: `select sysdate+5, sysdate "5 days" from dual; `
+- `EXIST`: *returns either true or false, best for test the existence of rows*: `SELECT * FROM table_name WHERE EXISTS(subquery);`
+- Hierarchical query: select rows in a hierarchical order, if tabel contains hierarchical data: 
+  ```
+  SELECT last_name, employee_id, manager_id 
+  FROM employees 
+  START WITH employee_id = 100 
+  CONNECT BY PRIOR employee_id = manager_id;
+  ```
 - Select departments where the number of the employees are greater or equal then 10: `SELECT  department_id, COUNT(*) FROM employees GROUP BY department_id HAVING COUNT(*)>=10;`
 - minimum salary from each departemnt_id where the lowest salary is equal with the minimum of all salaries: `SELECT e.department_id, last_name, minsalary FROM employees e, (SELECT department_id, MIN(salary) minsalary FROM employees GROUP BY department_id) min WHERE e.salary=min. minsalary AND e.department_id=min.department_id;`
 - using subquery: `SELECT last_name, salary, department_id,  (SELECT AVG(salary) FROM employees WHERE department_id=e.department_id) avgsalary FROM employees e;` or `SELECT job_title FROM employees NATURAL JOIN jobs WHERE salary=(SELECT MIN(salary) FROM employees);`
@@ -1642,11 +1651,11 @@ files: https://github.com/gabboraron/cassandra-workshop/tree/main/labwork
   ```
 - Select from date range:   
   ```SQL
-  SELECT e.employee_id,
-       e.first_name,
-       e.last_name
-  FROM employees e
-  WHERE e.hire_date BETWEEN SYSDATE–5000 AND SYSDATE;
+  SELECT employee_id,
+       first_name,
+       last_name
+   FROM employees
+  WHERE hire_date BETWEEN SYSDATE - 5000 and SYSDATE;
   ```
 - Display the current and previous job details of all employees:
   ```SQL
@@ -1657,4 +1666,32 @@ files: https://github.com/gabboraron/cassandra-workshop/tree/main/labwork
   FROM job_history
   order by employee_id;
   ```
-
+- get the people who are on IT department
+  ```SQL
+  SELECT e.employee_id,
+       e.first_name,
+       e.last_name,
+       d.department_name,
+       e.salary
+  FROM employees e
+  JOIN departments d
+  USING (department_id)
+  WHERE d.department_name = 'IT';
+  ```
+  get the sum of salaries:
+  ```SQL
+  SELECT NULL,
+       NULL,
+       NULL,
+       NULL,
+       SUM(e.salary)
+  FROM employees e
+  WHERE e.department_id = (SELECT department_id FROM departments WHERE department_name = 'IT')
+  ORDER BY 2 NULLS LAST;
+  ```
+- List the departments where nobody works:
+  ```SQL
+  select department_id from departments d 
+  where not exists (select 1 from employees e where e.department_id = d.department_id);
+  ```
+-   
