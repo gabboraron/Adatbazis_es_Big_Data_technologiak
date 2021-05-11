@@ -1529,7 +1529,7 @@ files: https://github.com/gabboraron/cassandra-workshop/tree/main/labwork
 > - grantor: HR gives privilage on Employee table to user OE, so OE now can make a querry about employee.
 > 
 > views: *a stored querry, you can write, store and give a name to querry*
-> - 
+> 
 
 - Select everything from table "Employees": `select * from EMPLOYEES;`
 - get maximum and minimum value of column: `select MAX(salary), MIN(salary) from employees;`
@@ -1640,6 +1640,21 @@ files: https://github.com/gabboraron/cassandra-workshop/tree/main/labwork
   GROUP BY d.department_name, j.job_title
   ORDER BY 1, 2
   ```
-  
-
+- Select from date range:   
+  ```SQL
+  SELECT e.employee_id,
+       e.first_name,
+       e.last_name
+  FROM employees e
+  WHERE e.hire_date BETWEEN SYSDATE–5000 AND SYSDATE;
+  ```
+- Display the current and previous job details of all employees:
+  ```SQL
+  SELECT employee_id, job_id
+  FROM employees
+  UNION 
+  SELECT employee_id, job_id
+  FROM job_history
+  order by employee_id;
+  ```
 
