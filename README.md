@@ -1499,3 +1499,147 @@ PRIMARY KEY (artist, album, track_id);
 
 #### lab exercise
 files: https://github.com/gabboraron/cassandra-workshop/tree/main/labwork
+
+
+# SQL notes - short version
+## SQL basics
+### Process order of `SELECT` statement
+1. `from`
+2. `where`
+3. `group by` - *produce a single result value*
+4. `having` - *to limit the results to groups that meet the criteria*
+5. `select`
+6. `order by`
+7. `limit`
+
+### data types
+- `NUMBER(X,Y)` - `X`-number of digits; `Y`-{0-integer; other_number-number of possible decimal digits} ex: `NUMBER(6,0)`
+- `VARCHAR2(X BYTE)` - `X` length of the string; ex: `VARCHAR2(20 BYTE)`
+- `DATE`
+
+
+## HR table
+> Connect to `HR` table: double click on `HR` 
+> 
+> *Database scheme is almost the same as database user, and contains database objects.*
+> 
+> - `nullable` column shows if the object can be `null` or not
+> - `"Model"`menupoint  shows the entity relationship diagram of table
+> - sonstraints: *not null*, *Unique*, *Chech*
+> - grantor: HR gives privilage on Employee table to user OE, so OE now can make a querry about employee.
+> 
+> views: *a stored querry, you can write, store and give a name to querry*
+> - 
+
+- Select everything from table "Employees": `select * from EMPLOYEES;`
+- get maximum and minimum value of column: `select MAX(salary), MIN(salary) from employees;`
+- group, order categories: 
+  ```SQL
+  select COUNT(employee_id), department_id
+  from employees
+  GROUP BY department_id
+  ORDER BY department_id;
+  ```
+- ordering with groups:
+  ```
+  select COUNT(employee_id), department_id
+  from employees
+  GROUP BY department_id;
+  ```
+- filters groups:
+  ```SQL
+  select COUNT(employee_id), department_id
+  from employees
+  GROUP BY department_id
+  HAVING COUNT(employee_id) > 1
+  ORDER BY department_id;
+  ```  
+- [JOIN operations](https://dataschool.com/how-to-teach-people-sql/sql-join-types-explained-visually/):
+  ![join operations](https://dataschool.com/assets/images/how-to-teach-people-sql/sqlJoins/sqlJoins_7.png)
+  - INNER JOIN: *Specifies a join between two tables with an explicit join clause.*
+    ![inner join](https://dataschool.com/assets/images/how-to-teach-people-sql/sqlJoins/sqlJoins_3.png)
+    ```SQL
+    SELECT columns
+    FROM table1 
+    INNER JOIN table2
+    ON table1.column = table2.column;
+    ```
+  - OUTER JOIN:  
+    ![outer join](https://dataschool.com/assets/images/how-to-teach-people-sql/sqlJoins/sqlJoins_2.png)
+    ```SQL
+    SELECT columns
+    FROM table1
+    FULL [OUTER] JOIN table2
+    ON table1.column = table2.column;
+    ```
+    - LEFT OUTER JOIN: *Specifies a join between two tables with an explicit join clause, preserving unmatched rows from the first table.*
+      ```SQL
+      SELECT columns
+      FROM table1
+      LEFT [OUTER] JOIN table2
+      ON table1.column = table2.column;
+      ```
+    - RIGHT OUTER JOIN: *Specifies a join between two tables with an explicit join clause, preserving unmatched rows from the second table.*
+      ```SQL
+      SELECT columns
+      FROM table1
+      RIGHT [OUTER] JOIN table2
+      ON table1.column = table2.column;
+      ```
+  - CROSS JOIN: *Specifies a join that produces the Cartesian product of two tables. It has no explicit join clause.*
+    ![union join](https://dataschool.com/assets/images/how-to-teach-people-sql/sqlJoins/sqlJoins_5.png)![cross join](https://dataschool.com/assets/images/how-to-teach-people-sql/sqlJoins/sqlJoins_6.png)
+    ```SQL
+    SELECT table1.column, table2.column
+    FROM table1
+    CROSS JOIN table2;
+    ```
+  - NATURAL JOIN: *Specifies an inner or outer join between two tables. It has no explicit join clause. Instead, one is created implicitly using the common columns from the two tables.*   
+- Select departments where the number of the employees are greater or equal then 10: `SELECT  department_id, COUNT(*) FROM employees GROUP BY department_id HAVING COUNT(*)>=10;`
+- minimum salary from each departemnt_id where the lowest salary is equal with the minimum of all salaries: `SELECT e.department_id, last_name, minsalary FROM employees e, (SELECT department_id, MIN(salary) minsalary FROM employees GROUP BY department_id) min WHERE e.salary=min. minsalary AND e.department_id=min.department_id;`
+- using subquery: `SELECT last_name, salary, department_id,  (SELECT AVG(salary) FROM employees WHERE department_id=e.department_id) avgsalary FROM employees e;` or `SELECT job_title FROM employees NATURAL JOIN jobs WHERE salary=(SELECT MIN(salary) FROM employees);`
+- Display the sum of all salary values in the EMPLOYEE table: `select SUM(salary) from employees;`
+- Compute the average salary value across all non-null salary values: `select AVG(salary) from employees;`
+- Substitute a non-null value for any null values: 
+  ```SQL
+  select AVG(salary) avg_salary from employees;
+  select AVG(NVL(salary, 0)) avg_salary from employees;
+  select AVG(COMMISSION_PCT) from employees;
+  select AVG(NVL(COMMISSION_PCT, 0)) from employees
+  ```
+- Obtain a count of all employees by using `COUNT(*)`: 
+- Obtain a count of all employees by applying COUNT to the primary key column: `select COUNT(employee_id) from employees;`
+- Apply COUNT to a column that contains null values: `select COUNT(manager_id) from employees;`
+- counting distinct values: `select COUNT(DISTINCT manager_id) num_distinct_managers from employees;`
+- Nested aggregate functions:
+  ```SQL
+  SELECT MIN(SUM(salary)) min_department_salary_sum
+  from employees
+  where department_id is not null
+  GROUP by department_id;
+  ```
+- Check the difference at `department_id=20`: 
+  ```SQL
+  select DEPARTMENT_ID, min(salary), max(salary) from employees
+  group by DEPARTMENT_ID
+  having max(salary)<6000;
+
+  select DEPARTMENT_ID, min(salary), max(salary) from employees
+  where salary<6000
+  group by DEPARTMENT_ID;
+  ```
+- Join of multiple tables:
+  ```SQL
+  SELECT d.department_name, j.job_title, MIN(salary), AVG(salary), MAX(salary)
+  FROM employees e
+  INNER JOIN departments d
+    ON e.department_id = d.department_id
+  INNER JOIN job_history jh
+    ON e.employee_id = jh.employee_id
+  INNER JOIN jobs j
+    ON j.job_id = jh.job_id
+  GROUP BY d.department_name, j.job_title
+  ORDER BY 1, 2
+  ```
+  
+
+
